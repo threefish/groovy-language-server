@@ -26,7 +26,6 @@ import net.prominic.groovyls.util.FileContentsTracker;
 import org.apache.groovy.parser.antlr4.util.StringUtils;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.SourceUnit;
-import org.codehaus.groovy.util.StringUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -118,20 +117,20 @@ public class CompilationUnitFactory implements ICompilationUnitFactory {
         config.setOptimizationOptions(optimizationOptions);
 
         List<String> classpathList = new ArrayList<>();
-		// 加载本地环境包
-		String libPath = System.getProperty("lsp.libPath");
-        if(!StringUtils.isEmpty(libPath)){
+        // 加载本地环境包
+        String libPath = System.getProperty("lsp.libPath");
+        if (!StringUtils.isEmpty(libPath)) {
             File directory = new File(libPath);
-            if(directory.isDirectory() && directory.exists()){
+            if (directory.isDirectory() && directory.exists()) {
                 File[] files = directory.listFiles();
                 for (File file : files) {
-                    if(file.getName().endsWith(".jar") && file.exists() && file.isFile()){
+                    if (file.getName().endsWith(".jar") && file.exists() && file.isFile()) {
                         classpathList.add(file.getPath());
                     }
                 }
             }
         }
-		getClasspathList(classpathList);
+        getClasspathList(classpathList);
         config.setClasspathList(classpathList);
 
         return config;
@@ -205,7 +204,16 @@ public class CompilationUnitFactory implements ICompilationUnitFactory {
     }
 
     protected void addOpenFileToCompilationUnit(URI uri, String contents, GroovyLSCompilationUnit compilationUnit) {
-        Path filePath = Paths.get(uri);
+        URI path = uri;
+        try {
+            if ("inmemory".equals(uri.getScheme())) {
+                String url = uri.toString().replace("inmemory", "file") + ".groovy";
+                path = new URI(url);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        Path filePath = Paths.get(path);
         SourceUnit sourceUnit = new SourceUnit(filePath.toString(),
                 new StringReaderSourceWithURI(contents, uri, compilationUnit.getConfiguration()),
                 compilationUnit.getConfiguration(), compilationUnit.getClassLoader(),
